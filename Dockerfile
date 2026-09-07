@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git && \
 # so a future push to the fork doesn't silently change what this
 # image builds against.
 RUN git clone https://forge.akinus21.com/akinus/akinus21-hermes-agent-self-evolution.git /opt/hermes-evolution && \
-    cd /opt/hermes-evolution && git checkout a7530bc
+    cd /opt/hermes-evolution && git checkout aa7e47a
 
 ENV HERMES_AGENT_REPO=/opt/data
 
