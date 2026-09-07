@@ -9,20 +9,20 @@ RUN mkdir -p /usr/local/lib/docker/cli-plugins && \
 RUN apt-get update && apt-get install -y --no-install-recommends git && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/NousResearch/hermes-agent-self-evolution.git /opt/hermes-evolution && \
-    /opt/hermes/.venv/bin/pip install -e "/opt/hermes-evolution[dev]"
+# Clone at build time — this is just static files, no venv dependency
+RUN git clone https://github.com/NousResearch/hermes-agent-self-evolution.git /opt/hermes-evolution
 
 ENV HERMES_AGENT_REPO=/opt/data
 
 # Wrapper so `hermes-evolve` is callable like any other hermes subcommand.
-# Uses bare `python`, which resolves to /opt/hermes/.venv/bin/python — the
-# same venv the pip install above targeted, so dspy and friends are on path.
+# Uses bare `python`, which resolves to /opt/hermes/.venv/bin/python at
+# runtime — the same venv init-evolution-repo.sh installs into below.
 RUN printf '#!/bin/bash\ncd /opt/hermes-evolution\nexec python -m evolution.skills.evolve_skill "$@"\n' \
     > /usr/local/bin/hermes-evolve && \
     chmod +x /usr/local/bin/hermes-evolve
 
-# Idempotent repo-init script — safe to run every container start,
-# no-ops if /opt/data is already a git repo
+# Idempotent init — repo setup AND evolution-tool pip install, both need
+# to run after the venv exists, i.e. at container start, not build time
 COPY init-evolution-repo.sh /usr/local/bin/init-evolution-repo.sh
 RUN chmod +x /usr/local/bin/init-evolution-repo.sh
 
