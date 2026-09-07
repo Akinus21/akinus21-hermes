@@ -9,8 +9,12 @@ RUN mkdir -p /usr/local/lib/docker/cli-plugins && \
 RUN apt-get update && apt-get install -y --no-install-recommends git && \
     rm -rf /var/lib/apt/lists/*
 
-# Clone at build time — static files only, no venv dependency
-RUN git clone https://github.com/NousResearch/hermes-agent-self-evolution.git /opt/hermes-evolution
+# Cloned from our own fork, pinned to the commit with the SkillModule /
+# constraint-validation bugfixes — not upstream, and not tracking main,
+# so a future push to the fork doesn't silently change what this
+# image builds against.
+RUN git clone https://forge.akinus21.com/akinus/akinus21-hermes-agent-self-evolution.git /opt/hermes-evolution && \
+    cd /opt/hermes-evolution && git checkout 6f11f0b
 
 ENV HERMES_AGENT_REPO=/opt/data
 
