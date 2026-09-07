@@ -2,7 +2,6 @@
 set -e
 
 DATA_DIR="${HERMES_HOME:-/opt/data}"
-VENV_PIP="/opt/hermes/.venv/bin/pip"
 VENV_PYTHON="/opt/hermes/.venv/bin/python"
 
 cd "$DATA_DIR"
@@ -83,8 +82,24 @@ EOF
     gosu hermes git commit -m "Initial commit of live skills for self-evolution"
 fi
 
-# Install hermes-agent-self-evolution into the runtime venv, once
-if [ -x "$VENV_PIP" ] && ! "$VENV_PYTHON" -c "import dspy" 2>/dev/null; then
-    echo "[init-evolution-repo] Installing hermes-agent-self-evolution into Hermes venv"
-    "$VENV_PIP" install -e "/opt/hermes-evolution[dev]"
+# pip's presence in this venv is NOT stable across restarts — the base
+# image appears to reprovision /opt/hermes/.venv on some starts without
+# a bundled pip, so always (re)bootstrap it. Idempotent and cheap if
+# pip is already present.
+"$VENV_PYTHON" -m ensurepip --default-pip >/dev/null 2>&1 || true
+
+if "$VENV_PYTHON" -m pip --version >/dev/null 2>&1; then
+    if ! "$VENV_PYTHON" -c 'import dspy' 2>/dev/null; then
+        echo "[init-evolution-repo] Installing hermes-agent-self-evolution into Hermes venv"
+        "$VENV_PYTHON" -m pip install -e "/opt/hermes-evolution[dev]"
+    fi
+    # MIPROv2 (GEPA's fallback path in this tool, as of dspy 3.3.1's
+    # GEPA API not matching what evolve_skill.py expects) needs optuna,
+    # which is not pulled in by the base install.
+    if ! "$VENV_PYTHON" -c 'import optuna' 2>/dev/null; then
+        echo "[init-evolution-repo] Installing optuna (required by MIPROv2 fallback)"
+        "$VENV_PYTHON" -m pip install optuna
+    fi
+else
+    echo "[init-evolution-repo] WARNING: pip unavailable in venv even after ensurepip — skipping evolution tool install this run"
 fi
