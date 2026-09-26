@@ -54,9 +54,16 @@ RUN chmod +x /usr/local/bin/init-evolution-repo.sh
 # Deliberately lives at /opt/hermes-client, NOT under $HERMES_HOME/opt/data —
 # that path is the self-evolution git repo, and hermes_client's sqlite/
 # uploads/build output has no business being tracked or committed by it.
-RUN apt-get update && apt-get install -y --no-install-recommends python3 gosu && \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      python3 gosu build-essential && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=hermes-client-builder /root/.hermes_client /opt/hermes-client
+# better-sqlite3 is a native module; the builder stage's Node version
+# (node:20-bookworm-slim) does not match this base image's Node runtime,
+# so the prebuilt binary is ABI-incompatible — rebuild it here, against
+# whatever Node this image actually ships, rather than pinning to the
+# builder's version.
+RUN cd /opt/hermes-client/api && npm rebuild better-sqlite3
 RUN chown -R hermes:hermes /opt/hermes-client
 
 # Wraps the base image's real entrypoint so init runs first, every start
