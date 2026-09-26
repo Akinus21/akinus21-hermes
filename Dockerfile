@@ -54,7 +54,7 @@ RUN chmod +x /usr/local/bin/init-evolution-repo.sh
 # Deliberately lives at /opt/hermes-client, NOT under $HERMES_HOME/opt/data —
 # that path is the self-evolution git repo, and hermes_client's sqlite/
 # uploads/build output has no business being tracked or committed by it.
-RUN apt-get update && apt-get install -y --no-install-recommends python3 && \
+RUN apt-get update && apt-get install -y --no-install-recommends python3 gosu && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=hermes-client-builder /root/.hermes_client /opt/hermes-client
 RUN chown -R hermes:hermes /opt/hermes-client
